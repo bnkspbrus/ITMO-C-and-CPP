@@ -17,6 +17,11 @@ int main(const int argc, const char **argv)
         return 0;
     }
     FILE *input = fopen(argv[1], "r");
+    if (input == NULL)
+    {
+        printf("input file incorrect\n");
+        return 0;
+    }
     fscanf(input, "%i", &N);
     float(*matrix)[N + 1] = malloc(N * (N + 1) * sizeof(float));
     for (int i = 0; i < N; i++)
