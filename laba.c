@@ -1,7 +1,9 @@
 #include <malloc.h>
 #include <math.h>
+#include <stdlib.h>
 
 int N;
+
 
 void down_triangular_view(float (*matrix)[]);
 
