@@ -3,6 +3,8 @@
 
 int N;
 
+
+
 void down_triangular_view(float (*matrix)[]);
 
 float round_float(const float f);
