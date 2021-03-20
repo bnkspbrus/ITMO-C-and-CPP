@@ -28,14 +28,14 @@ int main(const int argc, const char **argv)
     }
     fclose(input);
     down_triangular_view(matrix);
-    for (int i = 0; i < N; i++)
-    {
-        for (int j = 0; j < N + 1; j++)
-        {
-            printf("%g ", matrix[i][j]);
-        }
-        printf("\n");
-    }
+//    for (int i = 0; i < N; i++)
+//    {
+//        for (int j = 0; j < N + 1; j++)
+//        {
+//            printf("%g ", matrix[i][j]);
+//        }
+//        printf("\n");
+//    }
     FILE *output = fopen(argv[2], "w");
     float *value = malloc(N * sizeof(float));
     for (int i = N - 1; i >= 0; i--)
@@ -50,7 +50,8 @@ int main(const int argc, const char **argv)
             if (sum == 0)
             {
                 fprintf(output, "many solutions\n");
-            } else
+            }
+            else
             {
                 fprintf(output, "no solution\n");
             }
@@ -82,7 +83,8 @@ void down_triangular_view(float (*matrix)[N + 1])
             if (i < N)
             {
                 swap_row(matrix[row], matrix[i]);
-            } else
+            }
+            else
             {
                 continue;
             }
