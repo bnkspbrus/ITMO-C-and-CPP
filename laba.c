@@ -1,4 +1,5 @@
-#include <malloc.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 int print_message(const char *file, const float *matrix, const int n);
 
@@ -160,7 +161,3 @@ int print_message(const char *file, const float *matrix, const int n)
 //        printf("\n");
 //    }
 //}
-
-
-
-
