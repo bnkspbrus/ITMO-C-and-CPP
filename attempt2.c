@@ -2,7 +2,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 
-unsigned dec_utf8(FILE *input, int *bom, int *start, int size, int *reed_eof);
+unsigned dec_utf8(FILE *input, int *bom, int *start, int size, int *read_eof);
 
 void add_bom_utf16(int that, FILE *output);
 
@@ -10,9 +10,9 @@ void add_bom_utf8(FILE *output);
 
 void add_bom_utf32(int that, FILE *output);
 
-unsigned dec_utf32(FILE *input, int be, int *reed_eof);
+unsigned dec_utf32(FILE *input, int be, int *read_eof);
 
-unsigned dec_utf16(FILE *input, int *bom, int *start, int size, int be, int *reed_eof);
+unsigned dec_utf16(FILE *input, int *bom, int *start, int size, int be, int *read_eof);
 
 void code_utf32(FILE *output, unsigned num, int be);
 
@@ -77,9 +77,9 @@ int main(const int argc, const char **argv)
         }
         while (1) // true
         {
-            int reed_eof = 0;
-            unsigned num = dec_utf8(input, bom, &start, size, &reed_eof);
-            if (reed_eof)
+            int read_eof = 0;
+            unsigned num = dec_utf8(input, bom, &start, size, &read_eof);
+            if (read_eof)
             {
                 break;
             }
@@ -92,9 +92,9 @@ int main(const int argc, const char **argv)
         int start = 2;
         while (1)
         {
-            int reed_eof = 0;
-            unsigned num = dec_utf16(input, bom, &start, size, this - 2, &reed_eof);
-            if (reed_eof)
+            int read_eof = 0;
+            unsigned num = dec_utf16(input, bom, &start, size, this - 2, &read_eof);
+            if (read_eof)
             {
                 break;
             }
@@ -111,9 +111,9 @@ int main(const int argc, const char **argv)
         }
         while (1)
         {
-            int reed_eof = 0;
-            unsigned num = dec_utf8(input, bom, &start, size, &reed_eof);
-            if (reed_eof)
+            int read_eof = 0;
+            unsigned num = dec_utf8(input, bom, &start, size, &read_eof);
+            if (read_eof)
             {
                 break;
             }
@@ -125,9 +125,9 @@ int main(const int argc, const char **argv)
         add_bom_utf8(output);
         while (1)
         {
-            int reed_eof = 0;
-            unsigned num = dec_utf32(input, this - 4, &reed_eof);
-            if (reed_eof)
+            int read_eof = 0;
+            unsigned num = dec_utf32(input, this - 4, &read_eof);
+            if (read_eof)
             {
                 break;
             }
@@ -140,9 +140,9 @@ int main(const int argc, const char **argv)
         int start = 2;
         while (1)
         {
-            int reed_eof = 0;
-            unsigned num = dec_utf16(input, bom, &start, size, this - 2, &reed_eof);
-            if (reed_eof)
+            int read_eof = 0;
+            unsigned num = dec_utf16(input, bom, &start, size, this - 2, &read_eof);
+            if (read_eof)
             {
                 break;
             }
@@ -154,9 +154,9 @@ int main(const int argc, const char **argv)
         add_bom_utf16(that, output);
         while (1)
         {
-            int reed_eof = 0;
-            unsigned num = dec_utf32(input, this - 4, &reed_eof);
-            if (reed_eof)
+            int read_eof = 0;
+            unsigned num = dec_utf32(input, this - 4, &read_eof);
+            if (read_eof)
             {
                 break;
             }
@@ -169,9 +169,9 @@ int main(const int argc, const char **argv)
         int start = 2;
         while (1)
         {
-            int reed_eof = 0;
-            unsigned num = dec_utf16(input, bom, &start, size, this - 2, &reed_eof);
-            if (reed_eof)
+            int read_eof = 0;
+            unsigned num = dec_utf16(input, bom, &start, size, this - 2, &read_eof);
+            if (read_eof)
             {
                 break;
             }
@@ -183,9 +183,9 @@ int main(const int argc, const char **argv)
         add_bom_utf32(that, output);
         while (1)
         {
-            int reed_eof = 0;
-            unsigned num = dec_utf32(input, this - 4, &reed_eof);
-            if (reed_eof)
+            int read_eof = 0;
+            unsigned num = dec_utf32(input, this - 4, &read_eof);
+            if (read_eof)
             {
                 break;
             }
@@ -256,7 +256,7 @@ void code_utf32(FILE *output, unsigned num, int be)
     }
 }
 
-unsigned dec_utf32(FILE *input, int be, int *reed_eof) // decoding
+unsigned dec_utf32(FILE *input, int be, int *read_eof) // decoding
 {
     unsigned res = 0;
     for (int i = 0; i < 4; i++)
@@ -264,7 +264,7 @@ unsigned dec_utf32(FILE *input, int be, int *reed_eof) // decoding
         int c = fgetc(input);
         if (c == EOF)
         {
-            *reed_eof = 1;
+            *read_eof = 1;
             return EOF;
         }
         if (be)
@@ -279,7 +279,7 @@ unsigned dec_utf32(FILE *input, int be, int *reed_eof) // decoding
     return res;
 }
 
-unsigned dec_utf16(FILE *input, int *bom, int *start, int size, int be, int *reed_eof)
+unsigned dec_utf16(FILE *input, int *bom, int *start, int size, int be, int *read_eof)
 {
     int part1;
     int part2;
@@ -296,7 +296,7 @@ unsigned dec_utf16(FILE *input, int *bom, int *start, int size, int be, int *ree
     }
     if (part1 == EOF || part2 == EOF)
     {
-        *reed_eof = 1;
+        *read_eof = 1;
         return EOF;
     }
     if (be)
@@ -349,7 +349,7 @@ void code_utf16(FILE *output, unsigned num, int be /* big endian */)
     }
 }
 
-unsigned dec_utf8(FILE *input, int *bom, int *start, int size, int *reed_eof)
+unsigned dec_utf8(FILE *input, int *bom, int *start, int size, int *read_eof)
 {
     int c;
     if (*start < size)
@@ -363,7 +363,7 @@ unsigned dec_utf8(FILE *input, int *bom, int *start, int size, int *reed_eof)
     }
     if (c == EOF)
     {
-        *reed_eof = 1;
+        *read_eof = 1;
         return EOF;
     }
     if (!(c & (1 << 7)))
