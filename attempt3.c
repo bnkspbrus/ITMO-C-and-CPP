@@ -28,7 +28,7 @@ int input_file_encoding(const int size, const int *bom);
 
 int main(const int argc, const char **argv)
 {
-    unsigned c;
+    int c;
     FILE *input = fopen(argv[1], "rb");
     check_open_file(input, argv[1]);
     int bom[4];
