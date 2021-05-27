@@ -23,10 +23,9 @@ int main()
     set<string> bin_ops(arr_bin, arr_bin + 11);
     set<string> un_ops(arr_un, arr_un + 2);
     stack<string> stack;
-    while (!fin.eof())
+    string str;
+    while (fin >> str)
     {
-        string str;
-        getline(fin, str);
         stack.push(str);
         if (!un_ops.count(stack.top()) && !bin_ops.count(stack.top()))
         {
@@ -97,6 +96,3 @@ int main()
     fin.close();
     fout.close();
 }
-
-
-

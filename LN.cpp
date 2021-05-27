@@ -93,7 +93,6 @@ LN::LN(string_view str)
             {
                 digit[ind] *= 10;
                 digit[ind] += str[j] - '0';
-                cout << "digit[" << ind << "] " << digit[ind] << endl;
             }
         }
         else
