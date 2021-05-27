@@ -1,4 +1,5 @@
-﻿#include <cstring>
+
+#include <cstring>
 #include "LN.h"
 #include <cmath>
 #include <cstdio>
@@ -93,6 +94,7 @@ LN::LN(string_view str)
             {
                 digit[ind] *= 10;
                 digit[ind] += str[j] - '0';
+                cout << "digit[" << ind << "] " << digit[ind] << endl;
             }
         }
         else
@@ -184,7 +186,7 @@ LN LN::operator-(const LN &other) const
         max = digit;
         min = other.digit;
     }
-    for (int i = 0; i < min_size || carry; i++)
+    for (int i = 0; i < max_size || carry; i++)
     {
         res[i] = max[i] - carry - (i < min_size ? min[i] : 0);
         carry = res[i] < 0;

@@ -1,4 +1,7 @@
-﻿#include <iostream>
+
+#include <iostream>
+#include <cstring>
+#include <cmath>
 #include <stack>
 #include <fstream>
 #include "LN.h"
@@ -12,33 +15,22 @@ int main()
     fin.open("input.txt");
     ofstream fout;
     fout.open("output.txt");
-    try
+    if (!fin.is_open())
     {
-        if (!fin.is_open())
-            throw "input file didn't open\n";
-        if (!fout.is_open())
-            throw "output file didn't open\n";
-    }
-    catch (const char *str)
-    {
-        cerr << str << endl;
+
     }
     string arr_bin[] = {"+", "-", "*", "/", "%", "<", "<=", ">", ">=", "==", "!="};
     string arr_un[] = {"_", "~"};
     set<string> bin_ops(arr_bin, arr_bin + 11);
     set<string> un_ops(arr_un, arr_un + 2);
     stack<string> stack;
-    string str;
-    while (fin >> str)
+    while (!fin.eof())
     {
+        string str;
+        getline(fin, str);
         stack.push(str);
-    }
-    while (true)
-    {
         if (!un_ops.count(stack.top()) && !bin_ops.count(stack.top()))
         {
-            if (stack.size() == 1)
-                break;
             string arg1 = stack.top();
             stack.pop();
             if (!un_ops.count(stack.top()) && !bin_ops.count(stack.top()))
@@ -73,7 +65,10 @@ int main()
                         stack.push(a1 == a2 ? "1" : "0");
                     else
                         stack.push(a1 != a2 ? "1" : "0");
-                    continue;
+                }
+                else
+                {
+                    //throw
                 }
             }
             else
@@ -87,11 +82,13 @@ int main()
                         stack.push(a1.operator_().toString());
                     else
                         stack.push(a1.operator~().toString());
-                    continue;
+                }
+                else
+                {
+                    stack.push(arg1);
                 }
             }
         }
-        break;
     }
     while (!stack.empty())
     {
@@ -101,3 +98,5 @@ int main()
     fin.close();
     fout.close();
 }
+
+
