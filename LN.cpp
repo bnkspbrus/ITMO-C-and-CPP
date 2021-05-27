@@ -184,7 +184,7 @@ LN LN::operator-(const LN &other) const
         max = digit;
         min = other.digit;
     }
-    for (int i = 0; i < max_size || carry; i++)
+    for (int i = 0; i < min_size || carry; i++)
     {
         res[i] = max[i] - carry - (i < min_size ? min[i] : 0);
         carry = res[i] < 0;

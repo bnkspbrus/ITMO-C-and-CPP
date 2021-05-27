@@ -1,6 +1,4 @@
 ﻿#include <iostream>
-#include <cstring>
-#include <cmath>
 #include <stack>
 #include <fstream>
 #include "LN.h"
@@ -14,9 +12,16 @@ int main()
     fin.open("input.txt");
     ofstream fout;
     fout.open("output.txt");
-    if (!fin.is_open())
+    try
     {
-
+        if (!fin.is_open())
+            throw "input file didn't open\n";
+        if (!fout.is_open())
+            throw "output file didn't open\n";
+    }
+    catch (const char *str)
+    {
+        cerr << str << endl;
     }
     string arr_bin[] = {"+", "-", "*", "/", "%", "<", "<=", ">", ">=", "==", "!="};
     string arr_un[] = {"_", "~"};
@@ -27,8 +32,13 @@ int main()
     while (fin >> str)
     {
         stack.push(str);
+    }
+    while (true)
+    {
         if (!un_ops.count(stack.top()) && !bin_ops.count(stack.top()))
         {
+            if (stack.size() == 1)
+                break;
             string arg1 = stack.top();
             stack.pop();
             if (!un_ops.count(stack.top()) && !bin_ops.count(stack.top()))
@@ -63,10 +73,7 @@ int main()
                         stack.push(a1 == a2 ? "1" : "0");
                     else
                         stack.push(a1 != a2 ? "1" : "0");
-                }
-                else
-                {
-                    //throw
+                    continue;
                 }
             }
             else
@@ -80,13 +87,11 @@ int main()
                         stack.push(a1.operator_().toString());
                     else
                         stack.push(a1.operator~().toString());
-                }
-                else
-                {
-                    stack.push(arg1);
+                    continue;
                 }
             }
         }
+        break;
     }
     while (!stack.empty())
     {
