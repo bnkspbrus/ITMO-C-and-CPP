@@ -41,47 +41,40 @@ int main()
     {
         cerr << str << endl;
     }
-    vector<string> reverse;
     string str;
+    stack<LN> stack;
     while (fin >> str)
     {
-        reverse.push_back(str);
-    }
-    stack<LN> stack;
-    while (reverse.size())
-    {
-        if (bin_map.count(reverse.back()) && stack.size() >= 2)
+        if (bin_map.count(str))
         {
-            LN arg1 = stack.top();
-            stack.pop();
-            LN arg2 = stack.top();
-            stack.pop();
-            bin_method method = bin_map[reverse.back()];
-            reverse.pop_back();
-            stack.push((arg1.*method)(arg2));
+            if (stack.size() >= 2)
+            {
+                LN arg2 = stack.top();
+                stack.pop();
+                LN arg1 = stack.top();
+                stack.pop();
+                bin_method method = bin_map[str];
+                stack.push((arg1.*method)(arg2));
+                continue;
+            }
         }
-        else if (un_map.count(reverse.back()) && stack.size() >= 1)
+        else if (un_map.count(str))
         {
-            LN arg1 = stack.top();
-            stack.pop();
-            un_method method = un_map[reverse.back()];
-            reverse.pop_back();
-            stack.push((arg1.*method)());
-        }
-        else if (!un_map.count(reverse.back()) || !bin_map.count(reverse.back()))
-        {
-            string back = reverse.back();
-            stack.push(LN(back));
-            reverse.pop_back();
+            if (stack.size() >= 1)
+            {
+                LN arg1 = stack.top();
+                stack.pop();
+                un_method method = un_map[str];
+                stack.push((arg1.*method)());
+                continue;
+            }
         }
         else
         {
-            break;
+            stack.push(LN(str));
+            continue;
         }
-    }
-    for (int i = 0; i < reverse.size(); i++)
-    {
-        fprintf(fout, "%s\n", reverse[i].c_str());
+        break;
     }
     while (!stack.empty())
     {
