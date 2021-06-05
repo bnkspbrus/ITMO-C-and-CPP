@@ -1,5 +1,5 @@
-#ifndef LN_H
-#define LN_H
+﻿#ifndef UNTITLED1_LN_H
+#define UNTITLED1_LN_H
 
 #include <string_view>
 
@@ -7,15 +7,12 @@
 class LN
 {
 public:
-    bool negate;
-    int array_size;
-    int *digit;
 
     ~LN();
 
     LN(const LN &other);
 
-    LN(long long number);
+    LN(long long number = 0);
 
     LN(const char *string);
 
@@ -33,28 +30,39 @@ public:
 
     LN operator-(const LN &other) const;
 
-    LN &operator*(const LN &other) const;
+    LN operator*(const LN &other) const;
 
-    LN &operator/(const LN &other) const;
+    LN operator/(const LN &other) const;
 
-    LN &operator%(const LN &other) const;
+    LN operator%(const LN &other) const;
 
     LN operator~() const;
 
-    bool operator<(const LN &other) const;
+    LN operator<(const LN &other) const;
 
-    bool operator<=(const LN &other) const;
+    LN operator<=(const LN &other) const;
 
-    bool operator>(const LN &other) const;
+    LN operator>(const LN &other) const;
 
-    bool operator>=(const LN &other) const;
+    LN operator>=(const LN &other) const;
 
-    bool operator==(const LN &other) const;
+    LN operator==(const LN &other) const;
 
-    bool operator!=(const LN &other) const;
+    LN operator!=(const LN &other) const;
 
-    std::string toString() const;
+    operator bool() const;
+
+    operator long long() const;
+
+    void print(FILE *fout) const;
+
+private:
+    int compare_abs(const LN &first, const LN &second) const;
+
+    bool negate;
+    int array_size;
+    int *digit;
 };
 
 
-#endif //LN_H
+#endif //UNTITLED1_LN_H

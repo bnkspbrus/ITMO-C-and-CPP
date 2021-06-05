@@ -1,9 +1,10 @@
-include <cstring>
+﻿#include <cstring>
 #include "LN.h"
 #include <cmath>
 #include <cstdio>
 #include <string>
-#include <iostream>
+
+#define BASE (int) 1e9
 
 using namespace std;
 
@@ -22,18 +23,19 @@ LN::LN(long long number)
     else
         negate = false;
     array_size = 1;
-    if (number / 1e9 != 0) array_size = 2;
-    if (number / 1e18 != 0) array_size = 3;
+    if (number / BASE != 0) array_size = 2;
+    if (number / (long long) 1e18 != 0) array_size = 3;
     digit = new int[array_size];
     for (int i = 0; i < array_size; i++)
     {
-        digit[i] = abs(number % (int) 1e9);
-        number /= (int) 1e9;
+        digit[i] = abs(number % BASE);
+        number /= BASE;
     }
 }
 
 LN::LN(const char *string)
 {
+//    printf("%s\n", string);
     while (*string == '0' && strlen(string) > 1)
     {
         string++;
@@ -49,16 +51,20 @@ LN::LN(const char *string)
     array_size = ceil(len / 9.0);
     digit = new int[array_size];
     char num[10];
-    int last = len % 9 == 0 ? 9 : len % 9;
-    strncpy(num, string, last);
-    string += last;
-    sscanf(num, "%i", &digit[array_size - 1]);
-    for (int i = 1; i < array_size; i++)
+    num[9] = '\0';
+    for (int i = strlen(string), ind = 0; i > 0; i -= 9, ind++)
     {
-        strncpy(num, string, 9);
-        string += 9;
-        sscanf(num, "%i", &digit[array_size - 1 - i]);
+        if (i < 9)
+        {
+            strncpy(num, string, i);
+            num[i] = '\0';
+        }
+        else
+            strncpy(num, string + i - 9, 9);
+        sscanf(num, "%d", &digit[ind]);
+//        printf("num = %s digit[%i] = %i ", num, ind, digit[ind]);
     }
+//    printf("\n");
 }
 
 LN::LN(int array_size, int *digit, bool negate)
@@ -69,42 +75,8 @@ LN::LN(int array_size, int *digit, bool negate)
 }
 
 
-LN::LN(string_view str)
+LN::LN(string_view str) : LN(str.data())
 {
-    int length = str.length();
-    int start = 0;
-    while (length - start > 1 && str[0] == '0')
-        start++;
-    if (str[start] == '-')
-    {
-        negate = true;
-        start++;
-    }
-    else
-        negate = false;
-    int len = length - start;
-    array_size = ceil(len / 9.0);
-    digit = new int[array_size];
-    for (int i = length, ind = 0; i > start; i -= 9, ind++)
-    {
-        if (i - start < 9)
-        {
-            for (int j = start; j < i; j++)
-            {
-                digit[ind] *= 10;
-                digit[ind] += str[j] - '0';
-                cout << "digit[" << ind << "] " << digit[ind] << endl;
-            }
-        }
-        else
-        {
-            for (int j = i - 9; j < i; j++)
-            {
-                digit[ind] *= 10;
-                digit[ind] += str[j] - '0';
-            }
-        }
-    }
 }
 
 LN::~LN()
@@ -113,9 +85,11 @@ LN::~LN()
         delete[] digit;
 }
 
-LN::LN(LN &&other)
+LN::LN(LN &&other) : digit(other.digit)
 {
-
+    array_size = other.array_size;
+    negate = other.negate;
+    other.digit = NULL;
 }
 
 LN &LN::operator=(const LN &other)
@@ -141,20 +115,16 @@ LN LN::operator_() const
 LN LN::operator+(const LN &other) const
 {
     if (this->negate != other.negate)
-    {
         return *this - other.operator_();
-    }
     int carry = 0;
     int max_size = max(array_size, other.array_size);
-    int min_size = min(array_size, other.array_size);
-    int *max = array_size > other.array_size ? digit : other.digit;
-    int *min = digit != max ? digit : other.digit;
     int *res = new int[max_size]();
     for (int i = 0; i < max_size; i++)
     {
-        res[i] += carry + max[i] + (i < min_size ? min[i] : 0);
-        carry = res[i] >= 1e9;
-        if (carry) res[i] -= 1e9;
+        res[i] = i < array_size ? digit[i] : 0;
+        res[i] += carry + (i < other.array_size ? other.digit[i] : 0);
+        carry = res[i] >= BASE;
+        if (carry) res[i] -= BASE;
     }
     if (carry)
     {
@@ -165,10 +135,8 @@ LN LN::operator+(const LN &other) const
         max_size++;
         res = temp;
     }
-    return LN(max_size, res, other.negate);
+    return LN(max_size, res, negate);
 }
-
-int compare_abs(const LN &first, const LN &second);
 
 LN LN::operator-(const LN &other) const
 {
@@ -177,53 +145,98 @@ LN LN::operator-(const LN &other) const
     int carry = 0;
     int max_size = max(array_size, other.array_size);
     int min_size = min(array_size, other.array_size);
-    int *max = other.digit;
-    int *min = digit;
     int *res = new int[max_size]();
+    int *sub;
+    bool neg;
     if (compare_abs(*this, other) > 0)
     {
-        max = digit;
-        min = other.digit;
+        neg = negate;
+        copy(digit, digit + max_size, res);
+        sub = other.digit;
     }
-    for (int i = 0; i < max_size || carry; i++)
+    else
     {
-        res[i] = max[i] - carry - (i < min_size ? min[i] : 0);
+        neg = other.negate;
+        copy(other.digit, other.digit + max_size, res);
+        sub = digit;
+    }
+    for (int i = 0; i < min_size || carry; i++)
+    {
+        res[i] -= carry + (i < min_size ? sub[i] : 0);
         carry = res[i] < 0;
-        if (carry) res[i] += 1e9;
+        if (carry) res[i] += BASE;
     }
-    int i = max_size;
-    while (i > 1 && res[i - 1] == 0)
+    int size = max_size;
+    while (size > 1 && !res[size - 1])
+        size--;
+    if (max_size != size)
     {
-        i--;
-    }
-    if (max_size != i)
-    {
-        int *term = new int[i];
-        copy(res, res + i, term);
+        int *term = new int[size];
+        copy(res, res + size, term);
         delete[] res;
+        max_size = size;
         res = term;
-        max_size = i;
     }
-
-    return LN(max_size, res, compare_abs(*this, other) > 0 ? negate : !negate);
+    return LN(max_size, res, neg);
 }
 
 
-LN &LN::operator*(const LN &other) const
+LN LN::operator*(const LN &other) const
 {
-
+    int *res = new int[array_size + other.array_size]();
+    for (int i = 0; i < array_size; i++)
+    {
+        for (int j = 0, carry = 0; j < other.array_size || carry; j++)
+        {
+            long long cur = res[i + j] + (long long) digit[i] * (j < other.array_size ? other.digit[j] : 0) + carry;
+            res[i + j] = cur % BASE;
+            carry = cur / BASE;
+        }
+    }
+    int size = array_size + other.array_size;
+    while (size > 1 && !res[size - 1])
+        size--;
+    if (array_size + other.array_size != size)
+    {
+        int *temp = new int[size]();
+        copy(res, res + size, temp);
+        delete[] res;
+        res = temp;
+    }
+    return LN(size, res, negate != other.negate);
 }
 
-LN &LN::operator/(const LN &other) const
+LN LN::operator/(const LN &other) const
 {
-
+    int *res = new int[array_size];
+    copy(digit, digit + array_size, res);
+    int carry = 0;
+    for (int i = array_size - 1; i >= 0; i--)
+    {
+        long long cur = res[i] + (long long) carry * BASE;
+        res[i] = int(cur / other.digit[0]);
+        carry = int(cur % other.digit[0]);
+    }
+    int size = array_size;
+    while (size > 1 && !res[size - 1])
+    {
+        size--;
+    }
+    if (size != array_size)
+    {
+        int *temp = new int[size];
+        copy(res, res + size, temp);
+        delete[] res;
+        res = temp;
+    }
+    return LN(size, res, negate != other.negate);
 }
 
-LN &LN::operator%(const LN &other) const
+LN LN::operator%(const LN &other) const
 {
 }
 
-int compare_abs(const LN &first, const LN &second)
+int LN::compare_abs(const LN &first, const LN &second) const
 {
     if (first.array_size != second.array_size)
     {
@@ -245,7 +258,7 @@ int compare_abs(const LN &first, const LN &second)
     return 0;
 }
 
-bool LN::operator<(const LN &other) const
+LN LN::operator<(const LN &other) const
 {
     if (negate != other.negate)
     {
@@ -259,19 +272,17 @@ bool LN::operator<(const LN &other) const
     return compare_abs(*this, other) == -1;
 }
 
-bool LN::operator==(const LN &other) const
+LN LN::operator==(const LN &other) const
 {
-    if (array_size == 1 && other.array_size == 1 && digit[0] == 0 && other.digit[0] == 0)
-        return true;
-    return negate == other.negate && compare_abs(*this, other) == 0;
+    return (negate == other.negate || array_size == 1 && digit[0] == 0) && compare_abs(*this, other) == 0;
 }
 
-bool LN::operator<=(const LN &other) const
+LN LN::operator<=(const LN &other) const
 {
     return *this < other || *this == other;
 }
 
-bool LN::operator>(const LN &other) const
+LN LN::operator>(const LN &other) const
 {
     if (negate != other.negate)
     {
@@ -285,29 +296,36 @@ bool LN::operator>(const LN &other) const
     return compare_abs(*this, other) == 1;
 }
 
-bool LN::operator>=(const LN &other) const
+LN LN::operator>=(const LN &other) const
 {
     return *this > other || *this == other;
 }
 
-bool LN::operator!=(const LN &other) const
+LN LN::operator!=(const LN &other) const
 {
     return !(*this == other);
 }
 
-string LN::toString() const
+LN::operator bool() const
 {
-    string ans = to_string(digit[array_size - 1]);
+    return array_size != 1 || digit[0];
+}
+
+LN::operator long long() const
+{
+
+}
+
+void LN::print(FILE *fout) const
+{
+    if (negate)
+        fprintf(fout, "-");
+    fprintf(fout, "%d", digit[array_size - 1]);
     for (int i = array_size - 2; i >= 0; i--)
     {
-        string add = to_string(digit[i]);
-        while (add.length() < 9)
-        {
-            add = "0" + add;
-        }
-        ans += add;
+        fprintf(fout, "%09d", digit[i]);
     }
-    return ans;
+    fprintf(fout, "\n");
 }
 
 LN LN::operator~() const

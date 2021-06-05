@@ -1,102 +1,96 @@
-
-#include <iostream>
-#include <cstring>
-#include <cmath>
+﻿#include <iostream>
 #include <stack>
 #include <fstream>
 #include "LN.h"
 #include <set>
+#include <vector>
+#include <map>
 
 using namespace std;
 
+typedef LN (LN::*bin_method)(const LN &) const;
+
+typedef LN (LN::*un_method)() const;
+
 int main()
 {
+    map<string, bin_method> bin_map = {{"+",  &LN::operator+},
+                                       {"-",  &LN::operator-},
+                                       {"*",  &LN::operator*},
+                                       {"/",  &LN::operator/},
+                                       {"%",  &LN::operator%},
+                                       {"<",  &LN::operator<},
+                                       {"<=", &LN::operator<=},
+                                       {">",  &LN::operator>},
+                                       {">=", &LN::operator>=},
+                                       {"==", &LN::operator==},
+                                       {"!=", &LN::operator!=}};
+    map<string, un_method> un_map = {{"-", &LN::operator_},
+                                     {"~", &LN::operator~}};
     ifstream fin;
     fin.open("input.txt");
-    ofstream fout;
-    fout.open("output.txt");
-    if (!fin.is_open())
+    FILE *fout = fopen("output.txt", "w");
+    try
     {
-
+        if (!fin.is_open())
+            throw "input file didn't open\n";
+        if (fout == NULL)
+            throw "output file didn't open\n";
     }
-    string arr_bin[] = {"+", "-", "*", "/", "%", "<", "<=", ">", ">=", "==", "!="};
-    string arr_un[] = {"_", "~"};
-    set<string> bin_ops(arr_bin, arr_bin + 11);
-    set<string> un_ops(arr_un, arr_un + 2);
-    stack<string> stack;
-    while (!fin.eof())
+    catch (const char *str)
     {
-        string str;
-        getline(fin, str);
-        stack.push(str);
-        if (!un_ops.count(stack.top()) && !bin_ops.count(stack.top()))
+        cerr << str << endl;
+    }
+    vector<string> reverse;
+    string str;
+    while (fin >> str)
+    {
+        reverse.push_back(str);
+    }
+    stack<LN> stack;
+    while (reverse.size())
+    {
+        if (bin_map.count(reverse.back()) && stack.size() >= 2)
         {
-            string arg1 = stack.top();
+            LN arg1 = stack.top();
             stack.pop();
-            if (!un_ops.count(stack.top()) && !bin_ops.count(stack.top()))
-            {
-                string arg2 = stack.top();
-                stack.pop();
-                if (bin_ops.count(stack.top()))
-                {
-                    string fun = stack.top();
-                    stack.pop();
-                    LN a1(arg1);
-                    LN a2(arg2);
-                    if (fun == "+")
-                        stack.push((a1 + a2).toString());
-                    else if (fun == "-")
-                        stack.push((a1 - a2).toString());
-                    else if (fun == "*")
-                        stack.push((a1 * a2).toString());
-                    else if (fun == "/")
-                        stack.push((a1 / a2).toString());
-                    else if (fun == "%")
-                        stack.push((a1 % a2).toString());
-                    else if (fun == "<")
-                        stack.push(a1 < a2 ? "1" : "0");
-                    else if (fun == "<=")
-                        stack.push(a1 <= a2 ? "1" : "0");
-                    else if (fun == ">")
-                        stack.push(a1 > a2 ? "1" : "0");
-                    else if (fun == ">=")
-                        stack.push(a1 >= a2 ? "1" : "0");
-                    else if (fun == "==")
-                        stack.push(a1 == a2 ? "1" : "0");
-                    else
-                        stack.push(a1 != a2 ? "1" : "0");
-                }
-                else
-                {
-                    //throw
-                }
-            }
-            else
-            {
-                if (un_ops.count(stack.top()))
-                {
-                    string fun = stack.top();
-                    stack.pop();
-                    LN a1(arg1);
-                    if (fun == "_")
-                        stack.push(a1.operator_().toString());
-                    else
-                        stack.push(a1.operator~().toString());
-                }
-                else
-                {
-                    stack.push(arg1);
-                }
-            }
+            LN arg2 = stack.top();
+            stack.pop();
+            bin_method method = bin_map[reverse.back()];
+            reverse.pop_back();
+            stack.push((arg1.*method)(arg2));
         }
+        else if (un_map.count(reverse.back()) && stack.size() >= 1)
+        {
+            LN arg1 = stack.top();
+            stack.pop();
+            un_method method = un_map[reverse.back()];
+            reverse.pop_back();
+            stack.push((arg1.*method)());
+        }
+        else if (!un_map.count(reverse.back()) || !bin_map.count(reverse.back()))
+        {
+            string back = reverse.back();
+            stack.push(LN(back));
+            reverse.pop_back();
+        }
+        else
+        {
+            break;
+        }
+    }
+    for (int i = 0; i < reverse.size(); i++)
+    {
+        fprintf(fout, "%s\n", reverse[i].c_str());
     }
     while (!stack.empty())
     {
-        fout << stack.top() << endl;
+        stack.top().print(fout);
         stack.pop();
     }
     fin.close();
-    fout.close();
+    fclose(fout);
 }
+
 
 
