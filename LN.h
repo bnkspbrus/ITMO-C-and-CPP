@@ -1,16 +1,15 @@
-﻿#ifndef UNTITLED1_LN_H
-#define UNTITLED1_LN_H
+﻿#ifndef LN_H
+#define LN_H
 
 #include <string_view>
-
 
 class LN
 {
 public:
 
-    ~LN();
-
     LN(const LN &other);
+
+    LN(LN &&other);
 
     LN(long long number = 0);
 
@@ -18,11 +17,13 @@ public:
 
     LN(std::string_view string);
 
-    LN(LN &&other);
-
     LN(int array_size, int *digit, bool negate);
 
-    LN operator_() const;
+    ~LN();
+
+    friend LN operator ""_ln(const char *string);
+
+    LN operator-() const;
 
     LN &operator=(const LN &other);
 
@@ -59,10 +60,9 @@ public:
 private:
     int compare_abs(const LN &first, const LN &second) const;
 
-    bool negate;
-    int array_size;
-    int *digit;
+    bool negate_;
+    int array_size_;
+    int *digit_;
 };
 
-
-#endif //UNTITLED1_LN_H
+#endif //LN_H

@@ -12,6 +12,12 @@ typedef LN (LN::*bin_method)(const LN &) const;
 
 typedef LN (LN::*un_method)() const;
 
+void close_all(ifstream &fin, FILE *fout)
+{
+    fin.close();
+    fclose(fout);
+}
+
 int main()
 {
     map<string, bin_method> bin_map = {{"+",  &LN::operator+},
@@ -25,22 +31,15 @@ int main()
                                        {">=", &LN::operator>=},
                                        {"==", &LN::operator==},
                                        {"!=", &LN::operator!=}};
-    map<string, un_method> un_map = {{"-", &LN::operator_},
+    map<string, un_method> un_map = {{"_", &LN::operator-},
                                      {"~", &LN::operator~}};
     ifstream fin;
     fin.open("input.txt");
     FILE *fout = fopen("output.txt", "w");
-    try
-    {
-        if (!fin.is_open())
-            throw "input file didn't open\n";
-        if (fout == NULL)
-            throw "output file didn't open\n";
-    }
-    catch (const char *str)
-    {
-        cerr << str << endl;
-    }
+    if (!fin.is_open())
+        printf("input file didn't open\n");
+    if (fout == NULL)
+        printf("output file didn't open\n");
     string str;
     stack<LN> stack;
     while (fin >> str)
@@ -71,7 +70,20 @@ int main()
         }
         else
         {
-            stack.push(LN(str));
+            try
+            {
+                stack.push(LN(str));
+            }
+            catch (const char *e)
+            {
+                while (!stack.empty())
+                {
+                    stack.pop();
+                }
+                close_all(fin, fout);
+                printf("%s\n", e);
+                return 2;
+            }
             continue;
         }
         break;
@@ -81,8 +93,7 @@ int main()
         stack.top().print(fout);
         stack.pop();
     }
-    fin.close();
-    fclose(fout);
+    close_all(fin, fout);
 }
 
 
