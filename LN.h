@@ -20,9 +20,11 @@ public:
 
     ~LN();
 
-    LN operator-() const;
+    LN
+    operator-() const;
 
-    LN &operator=(const LN &other);
+    LN &
+    operator=(const LN &other);
 
     LN &operator=(LN &&other);
 
@@ -38,17 +40,17 @@ public:
 
     LN operator~() const;
 
-    LN operator<(const LN &other) const;
+    bool operator<(const LN &other) const;
 
-    LN operator<=(const LN &other) const;
+    bool operator<=(const LN &other) const;
 
-    LN operator>(const LN &other) const;
+    bool operator>(const LN &other) const;
 
-    LN operator>=(const LN &other) const;
+    bool operator>=(const LN &other) const;
 
-    LN operator==(const LN &other) const;
+    bool operator==(const LN &other) const;
 
-    LN operator!=(const LN &other) const;
+    bool operator!=(const LN &other) const;
 
     operator bool() const;
 
@@ -76,6 +78,7 @@ private:
     int *digit_ = NULL;
 };
 
-LN operator ""_ln(const char *string);
+LN
+operator ""_ln(const char *string);
 
 #endif //LN_H

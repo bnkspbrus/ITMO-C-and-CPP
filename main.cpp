@@ -10,6 +10,8 @@ typedef LN (LN::*bin_method)(const LN &) const;
 
 typedef LN (LN::*un_method)() const;
 
+typedef bool (LN::*comp_method)(const LN &) const;
+
 void close_all(ifstream &fin, FILE *fout)
 {
     fin.close();
@@ -20,17 +22,17 @@ void push_attempt(stack<LN> &stack, LN arg, ifstream &fin, FILE *fout);
 
 int main(const int argc, const char **argv)
 {
-    map<string, bin_method> bin_map = {{"+",  &LN::operator+},
-                                       {"-",  &LN::operator-},
-                                       {"*",  &LN::operator*},
-                                       {"/",  &LN::operator/},
-                                       {"%",  &LN::operator%},
-                                       {"<",  &LN::operator<},
-                                       {"<=", &LN::operator<=},
-                                       {">",  &LN::operator>},
-                                       {">=", &LN::operator>=},
-                                       {"==", &LN::operator==},
-                                       {"!=", &LN::operator!=}};
+    map<string, comp_method> comp_map = {{"==", &LN::operator==},
+                                         {"<",  &LN::operator<},
+                                         {"<=", &LN::operator<=},
+                                         {">",  &LN::operator>},
+                                         {">=", &LN::operator>=},
+                                         {"!=", &LN::operator!=}};
+    map<string, bin_method> bin_map = {{"+", &LN::operator+},
+                                       {"-", &LN::operator-},
+                                       {"*", &LN::operator*},
+                                       {"/", &LN::operator/},
+                                       {"%", &LN::operator%}};
     map<string, un_method> un_map = {{"_", &LN::operator-},
                                      {"~", &LN::operator~}};
     if (argc != 3)
@@ -55,7 +57,20 @@ int main(const int argc, const char **argv)
     stack<LN> stack;
     while (fin >> str)
     {
-        if (bin_map.count(str))
+        if (comp_map.count(str))
+        {
+            if (stack.size() >= 2)
+            {
+                LN arg2 = stack.top();
+                stack.pop();
+                LN arg1 = stack.top();
+                stack.pop();
+                comp_method method = comp_map[str];
+                push_attempt(stack, LN((arg1.*method)(arg2)), fin, fout);
+                continue;
+            }
+        }
+        else if (bin_map.count(str))
         {
             if (stack.size() >= 2)
             {

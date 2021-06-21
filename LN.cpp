@@ -33,8 +33,10 @@ LN::LN(long long number)
     else
         negate_ = false;
     array_size_ = 1;
-    if (number / BASE != 0) array_size_ = 2;
-    if (number / (long long) 1e18 != 0) array_size_ = 3;
+    if (number / BASE != 0)
+        array_size_ = 2;
+    if (number / (long long) 1e18 != 0)
+        array_size_ = 3;
     digit_ = (int *) malloc(sizeof(int) * array_size_);
     check_alloc(digit_);
     for (int i = 0; i < array_size_; i++)
@@ -88,8 +90,8 @@ LN::LN(int array_size, int *digit, bool negate)
     this->negate_ = negate;
 }
 
-
-LN::LN(string_view str) : LN(str.data())
+LN::LN(string_view str)
+        : LN(str.data())
 {
 }
 
@@ -163,7 +165,8 @@ LN LN::operator+(const LN &other) const
         res[i] = i < array_size_ ? digit_[i] : 0;
         res[i] += carry + (i < other.array_size_ ? other.digit_[i] : 0);
         carry = res[i] >= BASE;
-        if (carry) res[i] -= BASE;
+        if (carry)
+            res[i] -= BASE;
     }
     if (carry)
     {
@@ -207,7 +210,8 @@ LN LN::operator-(const LN &other) const
     {
         res[i] -= carry + (i < min_size ? sub[i] : 0);
         carry = res[i] < 0;
-        if (carry) res[i] += BASE;
+        if (carry)
+            res[i] += BASE;
     }
     int size = max_size;
     while (size > 1 && !res[size - 1])
@@ -222,7 +226,6 @@ LN LN::operator-(const LN &other) const
     return LN(max_size, res, neg);
 }
 
-
 LN LN::operator*(const LN &other) const
 {
     if (is_nan_ || other.is_nan_)
@@ -236,7 +239,8 @@ LN LN::operator*(const LN &other) const
     {
         for (int j = 0, carry = 0; j < other.array_size_ || carry; j++)
         {
-            long long cur = res[i + j] + (long long) digit_[i] * (j < other.array_size_ ? other.digit_[j] : 0) + carry;
+            long long cur =
+                    res[i + j] + (long long) digit_[i] * (j < other.array_size_ ? other.digit_[j] : 0) + carry;
             res[i + j] = cur % BASE;
             carry = cur / BASE;
         }
@@ -296,7 +300,7 @@ int LN::cmp_abs(const LN &second) const
     return 0;
 }
 
-LN LN::operator<(const LN &other) const
+bool LN::operator<(const LN &other) const
 {
     if (is_nan_ || other.is_nan_)
     {
@@ -314,7 +318,7 @@ LN LN::operator<(const LN &other) const
     return cmp_abs(other) == -1;
 }
 
-LN LN::operator==(const LN &other) const
+bool LN::operator==(const LN &other) const
 {
     if (is_nan_ || other.is_nan_)
     {
@@ -323,7 +327,7 @@ LN LN::operator==(const LN &other) const
     return is_zero() && other.is_zero() || negate_ == other.negate_ && cmp_abs(other) == 0;
 }
 
-LN LN::operator<=(const LN &other) const
+bool LN::operator<=(const LN &other) const
 {
     if (is_nan_ || other.is_nan_)
     {
@@ -332,7 +336,7 @@ LN LN::operator<=(const LN &other) const
     return *this < other || *this == other;
 }
 
-LN LN::operator>(const LN &other) const
+bool LN::operator>(const LN &other) const
 {
     if (is_nan_ || other.is_nan_)
     {
@@ -350,7 +354,7 @@ LN LN::operator>(const LN &other) const
     return cmp_abs(other) == 1;
 }
 
-LN LN::operator>=(const LN &other) const
+bool LN::operator>=(const LN &other) const
 {
     if (is_nan_ || other.is_nan_)
     {
@@ -359,7 +363,7 @@ LN LN::operator>=(const LN &other) const
     return *this > other || *this == other;
 }
 
-LN LN::operator!=(const LN &other) const
+bool LN::operator!=(const LN &other) const
 {
     if (is_nan_ || other.is_nan_)
     {
