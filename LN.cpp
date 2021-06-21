@@ -2,21 +2,28 @@
 #include "LN.h"
 #include <cmath>
 #include <cstdio>
-#include <string>
+#include <algorithm>
 
 #define BASE (int) 1e9
 
 using namespace std;
 
-void check_alloc(int *point);
+void check_alloc(int *point, int *old_point = NULL);
 
 LN::LN(const LN &other)
 {
-    array_size_ = other.array_size_;
-    negate_ = other.negate_;
-    digit_ = new(nothrow) int[array_size_];
-    check_alloc(digit_);
-    copy(other.digit_, other.digit_ + array_size_, digit_);
+    if (other.is_nan_)
+    {
+        is_nan_ = true;
+    }
+    else
+    {
+        array_size_ = other.array_size_;
+        negate_ = other.negate_;
+        digit_ = (int *) malloc(sizeof(int) * array_size_);
+        check_alloc(digit_);
+        copy(other.digit_, other.digit_ + array_size_, digit_);
+    }
 }
 
 LN::LN(long long number)
@@ -28,7 +35,7 @@ LN::LN(long long number)
     array_size_ = 1;
     if (number / BASE != 0) array_size_ = 2;
     if (number / (long long) 1e18 != 0) array_size_ = 3;
-    digit_ = new(nothrow) int[array_size_];
+    digit_ = (int *) malloc(sizeof(int) * array_size_);
     check_alloc(digit_);
     for (int i = 0; i < array_size_; i++)
     {
@@ -39,6 +46,11 @@ LN::LN(long long number)
 
 LN::LN(const char *string)
 {
+    if (strcmp("NaN", string) == 0)
+    {
+        is_nan_ = true;
+        return;
+    }
     while (*string == '0' && strlen(string) > 1)
     {
         string++;
@@ -52,7 +64,7 @@ LN::LN(const char *string)
         negate_ = false;
     int len = strlen(string);
     array_size_ = ceil(len / 9.0);
-    digit_ = new(nothrow) int[array_size_];
+    digit_ = (int *) malloc(sizeof(int) * array_size_);
     check_alloc(digit_);
     char num[10];
     num[9] = '\0';
@@ -83,33 +95,51 @@ LN::LN(string_view str) : LN(str.data())
 
 LN::~LN()
 {
-    if (digit_ != NULL)
-        delete[] digit_;
+    free(digit_);
 }
 
-LN::LN(LN &&other) : digit_(other.digit_)
+LN::LN(LN &&other)
 {
-    array_size_ = other.array_size_;
-    negate_ = other.negate_;
-    other.digit_ = NULL;
+    if (other.is_nan_)
+    {
+        is_nan_ = true;
+    }
+    else
+    {
+        array_size_ = other.array_size_;
+        digit_ = other.digit_;
+        negate_ = other.negate_;
+        other.digit_ = NULL;
+    }
 }
 
 LN &LN::operator=(const LN &other)
 {
     if (this != &other)
     {
-        delete[] digit_;
-        array_size_ = other.array_size_;
-        digit_ = new(nothrow) int[array_size_];
-        check_alloc(digit_);
-        copy(other.digit_, other.digit_ + array_size_, digit_);
-        negate_ = other.negate_;
+        if (other.is_nan_)
+        {
+            is_nan_ = true;
+        }
+        else
+        {
+            free(digit_);
+            array_size_ = other.array_size_;
+            digit_ = (int *) malloc(sizeof(int) * array_size_);
+            check_alloc(digit_);
+            copy(other.digit_, other.digit_ + array_size_, digit_);
+            negate_ = other.negate_;
+        }
     }
     return *this;
 }
 
 LN LN::operator-() const
 {
+    if (is_nan_)
+    {
+        return LN("NaN");
+    }
     LN temp(*this);
     temp.negate_ = !temp.negate_;
     return temp;
@@ -117,12 +147,17 @@ LN LN::operator-() const
 
 LN LN::operator+(const LN &other) const
 {
+    if (is_nan_ || other.is_nan_)
+    {
+        return LN("NaN");
+    }
     if (this->negate_ != other.negate_)
         return *this - (-other);
     int carry = 0;
     int max_size = max(array_size_, other.array_size_);
-    int *res = new(nothrow) int[max_size]();
+    int *res = (int *) malloc(sizeof(int) * max_size);
     check_alloc(res);
+    fill(res, res + max_size, 0);
     for (int i = 0; i < max_size; i++)
     {
         res[i] = i < array_size_ ? digit_[i] : 0;
@@ -132,29 +167,31 @@ LN LN::operator+(const LN &other) const
     }
     if (carry)
     {
-        int *temp = new(nothrow) int[max_size + 1];
-        check_alloc(temp);
-        copy(res, res + max_size, temp);
-        delete[] res;
-        temp[max_size] = 1;
+        int *old_temp = res;
+        res = (int *) realloc(res, sizeof(int) * (max_size + 1));
+        check_alloc(res, old_temp);
+        res[max_size] = 1;
         max_size++;
-        res = temp;
     }
     return LN(max_size, res, negate_);
 }
 
 LN LN::operator-(const LN &other) const
 {
+    if (is_nan_ || other.is_nan_)
+    {
+        return LN("NaN");
+    }
     if (this->negate_ != other.negate_)
         return *this + (-other);
     int carry = 0;
     int max_size = max(array_size_, other.array_size_);
     int min_size = min(array_size_, other.array_size_);
-    int *res = new(nothrow) int[max_size]();
+    int *res = (int *) malloc(sizeof(int) * array_size_);
     check_alloc(res);
     int *sub;
     bool neg;
-    if (compare_abs(*this, other) > 0)
+    if (cmp_abs(other) > 0)
     {
         neg = negate_;
         copy(digit_, digit_ + max_size, res);
@@ -177,12 +214,10 @@ LN LN::operator-(const LN &other) const
         size--;
     if (max_size != size)
     {
-        int *temp = new(nothrow) int[size];
-        check_alloc(temp);
-        copy(res, res + size, temp);
-        delete[] res;
+        int *old_res = res;
+        res = (int *) realloc(res, sizeof(int) * size);
+        check_alloc(res, old_res);
         max_size = size;
-        res = temp;
     }
     return LN(max_size, res, neg);
 }
@@ -190,8 +225,13 @@ LN LN::operator-(const LN &other) const
 
 LN LN::operator*(const LN &other) const
 {
-    int *res = new(nothrow) int[array_size_ + other.array_size_]();
+    if (is_nan_ || other.is_nan_)
+    {
+        return LN("NaN");
+    }
+    int *res = (int *) malloc(sizeof(int) * (array_size_ + other.array_size_));
     check_alloc(res);
+    fill(res, res + array_size_ + other.array_size_, 0);
     for (int i = 0; i < array_size_; i++)
     {
         for (int j = 0, carry = 0; j < other.array_size_ || carry; j++)
@@ -206,61 +246,48 @@ LN LN::operator*(const LN &other) const
         size--;
     if (array_size_ + other.array_size_ != size)
     {
-        int *temp = new(nothrow) int[size]();
-        check_alloc(temp);
-        copy(res, res + size, temp);
-        delete[] res;
-        res = temp;
+        int *old_res = res;
+        res = (int *) realloc(res, sizeof(int) * size);
+        check_alloc(res, old_res);
     }
     return LN(size, res, negate_ != other.negate_);
 }
 
 LN LN::operator/(const LN &other) const
 {
-    int *res = new(nothrow) int[array_size_];
-    check_alloc(res);
-    copy(digit_, digit_ + array_size_, res);
-    int carry = 0;
-    for (int i = array_size_ - 1; i >= 0; i--)
+    if (is_nan_ || other.is_nan_ || other.is_zero())
     {
-        long long cur = res[i] + (long long) carry * BASE;
-        res[i] = int(cur / other.digit_[0]);
-        carry = int(cur % other.digit_[0]);
+        return LN("NaN");
     }
-    int size = array_size_;
-    while (size > 1 && !res[size - 1])
-    {
-        size--;
-    }
-    if (size != array_size_)
-    {
-        int *temp = new(nothrow) int[size];
-        check_alloc(temp);
-        copy(res, res + size, temp);
-        delete[] res;
-        res = temp;
-    }
-    return LN(size, res, negate_ != other.negate_);
+    LN mod;
+    return divide(other, mod);
 }
 
 LN LN::operator%(const LN &other) const
 {
+    if (is_nan_ || other.is_nan_ || other.is_zero())
+    {
+        return LN("NaN");
+    }
+    LN mod;
+    divide(other, mod);
+    return mod;
 }
 
-int LN::compare_abs(const LN &first, const LN &second) const
+int LN::cmp_abs(const LN &second) const
 {
-    if (first.array_size_ != second.array_size_)
+    if (array_size_ != second.array_size_)
     {
-        if (first.array_size_ > second.array_size_)
+        if (array_size_ > second.array_size_)
             return 1;
         else
             return -1;
     }
-    for (int i = first.array_size_ - 1; i >= 0; i--)
+    for (int i = array_size_ - 1; i >= 0; i--)
     {
-        if (first.digit_[i] != second.digit_[i])
+        if (digit_[i] != second.digit_[i])
         {
-            if (first.digit_[i] > second.digit_[i])
+            if (digit_[i] > second.digit_[i])
                 return 1;
             else
                 return -1;
@@ -271,6 +298,10 @@ int LN::compare_abs(const LN &first, const LN &second) const
 
 LN LN::operator<(const LN &other) const
 {
+    if (is_nan_ || other.is_nan_)
+    {
+        return false;
+    }
     if (negate_ != other.negate_)
     {
         if (negate_)
@@ -279,22 +310,34 @@ LN LN::operator<(const LN &other) const
             return false;
     }
     if (negate_ && other.negate_)
-        return compare_abs(*this, other) == 1;
-    return compare_abs(*this, other) == -1;
+        return cmp_abs(other) == 1;
+    return cmp_abs(other) == -1;
 }
 
 LN LN::operator==(const LN &other) const
 {
-    return (negate_ == other.negate_ || array_size_ == 1 && digit_[0] == 0) && compare_abs(*this, other) == 0;
+    if (is_nan_ || other.is_nan_)
+    {
+        return false;
+    }
+    return is_zero() && other.is_zero() || negate_ == other.negate_ && cmp_abs(other) == 0;
 }
 
 LN LN::operator<=(const LN &other) const
 {
+    if (is_nan_ || other.is_nan_)
+    {
+        return false;
+    }
     return *this < other || *this == other;
 }
 
 LN LN::operator>(const LN &other) const
 {
+    if (is_nan_ || other.is_nan_)
+    {
+        return false;
+    }
     if (negate_ != other.negate_)
     {
         if (negate_)
@@ -303,27 +346,39 @@ LN LN::operator>(const LN &other) const
             return true;
     }
     if (negate_ && other.negate_)
-        return compare_abs(*this, other) == -1;
-    return compare_abs(*this, other) == 1;
+        return cmp_abs(other) == -1;
+    return cmp_abs(other) == 1;
 }
 
 LN LN::operator>=(const LN &other) const
 {
+    if (is_nan_ || other.is_nan_)
+    {
+        return false;
+    }
     return *this > other || *this == other;
 }
 
 LN LN::operator!=(const LN &other) const
 {
+    if (is_nan_ || other.is_nan_)
+    {
+        return true;
+    }
     return !(*this == other);
 }
 
 LN::operator bool() const
 {
-    return array_size_ != 1 || digit_[0];
+    return !is_zero();
 }
 
 LN::operator long long() const
 {
+    if (is_zero())
+    {
+        return 0;
+    }
     long long res = 0;
     for (int i = array_size_ - 1; i >= 0; i--)
     {
@@ -339,6 +394,16 @@ LN::operator long long() const
 
 void LN::print(FILE *fout) const
 {
+    if (is_nan_)
+    {
+        fprintf(fout, "NaN\n");
+        return;
+    }
+    if (is_zero())
+    {
+        fprintf(fout, "0\n");
+        return;
+    }
     if (negate_)
         fprintf(fout, "-");
     fprintf(fout, "%d", digit_[array_size_ - 1]);
@@ -351,12 +416,50 @@ void LN::print(FILE *fout) const
 
 LN LN::operator~() const
 {
+    if (is_nan_ || negate_)
+    {
+        return LN("NaN");
+    }
+    int count_pair = (array_size_ >> 1) + (1 & array_size_);
+    int *res = (int *) malloc(sizeof(int) * count_pair);
+    LN current, subtract;
+    for (int i = array_size_ - 1, j = count_pair - 1; i >= 0; j--)
+    {
+        current.shift_right();
+        current.digit_[0] = digit_[i--];
+        if (!(1 & i))
+        {
+            current.shift_right();
+            current.digit_[0] = digit_[i--];
+        }
+        subtract.shift_right();
+        int left = 0, right = BASE;
+        while (left < right - 1)
+        {
+            int mid = (left + right) >> 1;
+            subtract.digit_[0] = mid;
+            if ((subtract * mid).cmp_abs(current) <= 0)
+            {
+                left = mid;
+            }
+            else
+            {
+                right = mid;
+            }
+        }
+        res[j] = left;
+        subtract.digit_[0] = left;
+        current = current - (subtract * left);
+        subtract = subtract + LN(left);
+    }
+    return LN(count_pair, res, false);
 }
 
-void check_alloc(int *point)
+void check_alloc(int *point, int *old_point)
 {
     if (point == NULL)
     {
+        free(old_point);
         throw "memory isn't allocated";
     }
 }
@@ -364,4 +467,110 @@ void check_alloc(int *point)
 LN operator ""_ln(const char *string)
 {
     return LN(string);
+}
+
+bool LN::is_zero() const
+{
+    return array_size_ == 1 && digit_[0] == 0;
+}
+
+void LN::shift_right()
+{
+    if (is_zero())
+    {
+        return;
+    }
+    array_size_++;
+    int *temp = (int *) malloc(sizeof(int) * array_size_);
+    check_alloc(temp, digit_);
+    copy(digit_, digit_ + array_size_ - 1, temp + 1);
+    free(digit_);
+    digit_ = temp;
+}
+
+LN LN::operator*(const int other) const
+{
+    if (other == 0)
+    {
+        return LN();
+    }
+    int carry = 0;
+    int *res = (int *) malloc(sizeof(int) * array_size_);
+    int size = array_size_;
+    for (int i = 0; i < array_size_; i++)
+    {
+        long long cur = carry + (long long) digit_[i] * other;
+        res[i] = cur % BASE;
+        carry = cur / BASE;
+    }
+    if (carry)
+    {
+        int *old_res = res;
+        res = (int *) realloc(res, sizeof(int) * ++size);
+        check_alloc(res, old_res);
+        res[size - 1] = carry;
+    }
+    return LN(size, res, negate_ != (other < 0));
+}
+
+LN LN::divide(const LN &other, LN &mod) const
+{
+    if (is_zero() || cmp_abs(other) < 0)
+    {
+        return LN();
+    }
+    int *res = (int *) malloc(sizeof(int) * array_size_);
+    for (int i = array_size_ - 1; i >= 0; i--)
+    {
+        mod.shift_right();
+        mod.digit_[0] = digit_[i];
+        int left = 0, right = BASE;
+        while (left < right - 1)
+        {
+            int mid = (left + right) >> 1;
+            if ((other * mid).cmp_abs(mod) <= 0)
+            {
+                left = mid;
+            }
+            else
+            {
+                right = mid;
+            }
+        }
+        res[i] = left;
+        mod = mod - (other.negate_ ? -other : other) * left;
+    }
+    int size = array_size_;
+    while (size > 1 && !res[size - 1])
+    {
+        size--;
+    }
+    if (size != array_size_)
+    {
+        int *old_res = res;
+        res = (int *) realloc(res, sizeof(int) * size);
+        check_alloc(res, old_res);
+    }
+    mod.negate_ = negate_;
+    return LN(size, res, negate_ != other.negate_);
+}
+
+LN &LN::operator=(LN &&other)
+{
+    if (this != &other)
+    {
+        if (other.is_nan_)
+        {
+            is_nan_ = true;
+        }
+        else
+        {
+            free(digit_);
+            digit_ = other.digit_;
+            other.digit_ = NULL;
+            array_size_ = other.array_size_;
+            negate_ = other.negate_;
+        }
+    }
+    return *this;
 }

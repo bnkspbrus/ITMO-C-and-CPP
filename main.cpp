@@ -18,7 +18,7 @@ void close_all(ifstream &fin, FILE *fout)
     fclose(fout);
 }
 
-int main()
+int main(const int argc, const char **argv)
 {
     map<string, bin_method> bin_map = {{"+",  &LN::operator+},
                                        {"-",  &LN::operator-},
@@ -33,13 +33,24 @@ int main()
                                        {"!=", &LN::operator!=}};
     map<string, un_method> un_map = {{"_", &LN::operator-},
                                      {"~", &LN::operator~}};
+    if (argc != 3)
+    {
+        printf("invalid number of arguments\n");
+        return 1;
+    }
     ifstream fin;
-    fin.open("input.txt");
-    FILE *fout = fopen("output.txt", "w");
+    fin.open(argv[1]);
+    FILE *fout = fopen(argv[2], "w");
     if (!fin.is_open())
+    {
         printf("input file didn't open\n");
+        return 1;
+    }
     if (fout == NULL)
+    {
         printf("output file didn't open\n");
+        return 1;
+    }
     string str;
     stack<LN> stack;
     while (fin >> str)
@@ -95,6 +106,3 @@ int main()
     }
     close_all(fin, fout);
 }
-
-
-
