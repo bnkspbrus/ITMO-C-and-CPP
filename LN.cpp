@@ -90,8 +90,7 @@ LN::LN(int array_size, int *digit, bool negate)
     this->negate_ = negate;
 }
 
-LN::LN(string_view str)
-        : LN(str.data())
+LN::LN(string_view str) : LN(str.data())
 {
 }
 
@@ -190,20 +189,20 @@ LN LN::operator-(const LN &other) const
     int carry = 0;
     int max_size = max(array_size_, other.array_size_);
     int min_size = min(array_size_, other.array_size_);
-    int *res = (int *) malloc(sizeof(int) * array_size_);
+    int *res = (int *) malloc(sizeof(int) * max_size);
     check_alloc(res);
     int *sub;
     bool neg;
     if (cmp_abs(other) > 0)
     {
         neg = negate_;
-        copy(digit_, digit_ + max_size, res);
+        copy(digit_, digit_ + array_size_, res);
         sub = other.digit_;
     }
     else
     {
         neg = !negate_;
-        copy(other.digit_, other.digit_ + max_size, res);
+        copy(other.digit_, other.digit_ + other.array_size_, res);
         sub = digit_;
     }
     for (int i = 0; i < min_size || carry; i++)
