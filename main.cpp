@@ -2,8 +2,6 @@
 #include <stack>
 #include <fstream>
 #include "LN.h"
-#include <set>
-#include <vector>
 #include <map>
 
 using namespace std;
@@ -17,6 +15,8 @@ void close_all(ifstream &fin, FILE *fout)
     fin.close();
     fclose(fout);
 }
+
+void push_attempt(stack<LN> &stack, LN arg, ifstream &fin, FILE *fout);
 
 int main(const int argc, const char **argv)
 {
@@ -64,7 +64,7 @@ int main(const int argc, const char **argv)
                 LN arg1 = stack.top();
                 stack.pop();
                 bin_method method = bin_map[str];
-                stack.push((arg1.*method)(arg2));
+                push_attempt(stack, (arg1.*method)(arg2), fin, fout);
                 continue;
             }
         }
@@ -75,26 +75,13 @@ int main(const int argc, const char **argv)
                 LN arg1 = stack.top();
                 stack.pop();
                 un_method method = un_map[str];
-                stack.push((arg1.*method)());
+                push_attempt(stack, (arg1.*method)(), fin, fout);
                 continue;
             }
         }
         else
         {
-            try
-            {
-                stack.push(LN(str));
-            }
-            catch (const char *e)
-            {
-                while (!stack.empty())
-                {
-                    stack.pop();
-                }
-                close_all(fin, fout);
-                printf("%s\n", e);
-                return 2;
-            }
+            push_attempt(stack, LN(str), fin, fout);
             continue;
         }
         break;
@@ -105,4 +92,22 @@ int main(const int argc, const char **argv)
         stack.pop();
     }
     close_all(fin, fout);
+}
+
+void push_attempt(stack<LN> &stack, LN arg, ifstream &fin, FILE *fout)
+{
+    try
+    {
+        stack.push(arg);
+    }
+    catch (const char *e)
+    {
+        while (!stack.empty())
+        {
+            stack.pop();
+        }
+        close_all(fin, fout);
+        printf("%s\n", e);
+        exit(2);
+    }
 }
