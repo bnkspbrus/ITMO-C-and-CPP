@@ -453,6 +453,7 @@ LN LN::operator~() const
         res[j] = left;
         subtract.digit_[0] = left;
         current = current - (subtract * left);
+        current.negate_ = false;
         subtract = subtract + LN(left);
     }
     return LN(count_pair, res, false);
@@ -520,6 +521,7 @@ LN LN::divide(const LN &other, LN &mod) const
 {
     if (is_zero() || cmp_abs(other) < 0)
     {
+        mod = *this;
         return LN();
     }
     int *res = (int *) malloc(sizeof(int) * array_size_);
