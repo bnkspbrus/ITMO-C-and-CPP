@@ -57,7 +57,7 @@ int main(const int argc, const char **argv)
     stack<LN> stack;
     while (fin >> str)
     {
-        if (comp_map.count(str))
+        if (comp_map.count(str) || bin_map.count(str))
         {
             if (stack.size() >= 2)
             {
@@ -65,21 +65,16 @@ int main(const int argc, const char **argv)
                 stack.pop();
                 LN arg1 = stack.top();
                 stack.pop();
-                comp_method method = comp_map[str];
-                push_attempt(stack, LN((arg1.*method)(arg2)), fin, fout);
-                continue;
-            }
-        }
-        else if (bin_map.count(str))
-        {
-            if (stack.size() >= 2)
-            {
-                LN arg2 = stack.top();
-                stack.pop();
-                LN arg1 = stack.top();
-                stack.pop();
-                bin_method method = bin_map[str];
-                push_attempt(stack, (arg1.*method)(arg2), fin, fout);
+                if (comp_map.count(str))
+                {
+                    comp_method method = comp_map[str];
+                    push_attempt(stack, LN((arg1.*method)(arg2)), fin, fout);
+                }
+                else
+                {
+                    bin_method method = bin_map[str];
+                    push_attempt(stack, (arg1.*method)(arg2), fin, fout);
+                }
                 continue;
             }
         }

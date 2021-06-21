@@ -78,7 +78,6 @@ private:
     int *digit_ = NULL;
 };
 
-LN
-operator ""_ln(const char *string);
+LN operator ""_ln(const char *string);
 
 #endif //LN_H
