@@ -20,11 +20,9 @@ public:
 
     ~LN();
 
-    LN
-    operator-() const;
+    LN operator-() const;
 
-    LN &
-    operator=(const LN &other);
+    LN &operator=(const LN &other);
 
     LN &operator=(LN &&other);
 
